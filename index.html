@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sellwood Enrollment Check</title>
+<meta name="description" content="Is Sellwood Middle School headed below 400 students? An interactive check of the PSU enrollment forecast using Oregon Department of Education data.">
+<style>
+:root{
+  --bg:#fbfaf7; --card:#ffffff; --ink:#1d1d1b; --ink2:#5b5a55; --ink3:#8a8880;
+  --grid:#e7e5df; --axis:#b9b6ad; --ref:#6f6d66;
+  --accent:#2563c9; --accent-soft:rgba(37,99,201,.22);
+  --muted:#b3b0a5; --muted-ink:#77756c; --band:rgba(120,116,104,.08);
+  --hl:#c2410c; --border:#e5e2da; --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#151513; --card:#1e1e1b; --ink:#f0eee8; --ink2:#b6b3aa; --ink3:#8d8a81;
+    --grid:#2e2d29; --axis:#55534c; --ref:#a29f95;
+    --accent:#6ea0f5; --accent-soft:rgba(110,160,245,.28);
+    --muted:#6d6a61; --muted-ink:#a9a69c; --band:rgba(255,255,255,.05); --hl:#f28c4f;
+    --border:#2f2e2a; --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151513; --card:#1e1e1b; --ink:#f0eee8; --ink2:#b6b3aa; --ink3:#8d8a81;
+  --grid:#2e2d29; --axis:#55534c; --ref:#a29f95;
+  --accent:#6ea0f5; --accent-soft:rgba(110,160,245,.28);
+  --muted:#6d6a61; --muted-ink:#a9a69c; --band:rgba(255,255,255,.05); --hl:#f28c4f;
+  --border:#2f2e2a; --shadow:none;
+}
+*{box-sizing:border-box}
+.ctl{position:relative}
+.infobtn{font:inherit;font-size:12px;color:var(--accent);background:none;border:0;padding:4px 0 0;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.pop{grid-column:1/-1;position:relative;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.16);padding:12px 12px 8px}
+.pop h3{font-size:14px;margin:0 0 2px}
+.pop .ps{font-size:12px;color:var(--ink3);margin:0 0 4px}
+.pop .close{position:absolute;right:8px;top:6px;border:0;background:none;color:var(--ink3);font-size:18px;cursor:pointer;line-height:1}
+.pop svg{display:block;width:100%;height:auto}
+
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+main{max-width:920px;margin:0 auto;padding:40px 16px 64px}
+h1{font-size:clamp(26px,4.2vw,36px);line-height:1.15;margin:0 0 10px;letter-spacing:-.01em}
+h2{font-size:21px;line-height:1.25;margin:0 0 6px}
+p{margin:0 0 12px}
+.lede{font-size:18px;color:var(--ink2);max-width:62ch}
+.meta{font-size:13px;color:var(--ink3);margin-bottom:28px}
+a{color:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:24px 0 36px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+.stat .k{font-size:13px;color:var(--ink2)}
+.stat .v{font-size:28px;font-weight:650;font-variant-numeric:tabular-nums;margin:2px 0}
+.stat .s{font-size:13px;color:var(--ink3)}
+.stat.proj{max-width:440px}
+.stats{margin-bottom:36px}
+.nomodel{display:block;margin-top:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--ink2);font-size:13px}
+.nomodel b{color:var(--ink)}
+.schoolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin:0 0 12px}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:999px;padding:3px;background:var(--bg)}
+.seg button{font:inherit;font-size:14px;border:0;background:none;color:var(--ink2);padding:6px 14px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--ink);font-weight:650;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.toggle{font-size:14px;color:var(--ink2);display:flex;align-items:center;gap:8px;cursor:pointer}
+.toggle input{accent-color:var(--accent);width:16px;height:16px}
+.bottomline{margin:0 0 28px;padding:16px 20px;border:1px solid var(--border);border-radius:12px;background:var(--card);box-shadow:var(--shadow)}
+.bottomline h2{font-size:19px;margin:0 0 6px}
+.bottomline ul{margin:0;padding-left:20px}
+.bottomline li{margin-bottom:6px}
+.callout h2{font-size:19px;margin:0 0 6px}
+.callout p{margin:0}
+.callout{font-size:17px;line-height:1.55;max-width:62ch;margin:0 0 36px;padding:12px 16px;border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:4px}
+.stat.proj .proj-title{font-size:16px;font-weight:650;color:var(--ink)}
+.stat.proj ul{list-style:none;margin:8px 0 6px;padding:0}
+.stat.proj li{display:grid;grid-template-columns:1fr auto 48px;gap:12px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums}
+.stat.proj li b{font-size:18px;font-weight:600}
+.stat.proj li em{font-style:normal;font-size:13px;color:var(--ink3);text-align:right}
+.stat.proj li.actual{border-bottom:0}
+.stat.proj li.actual b{font-size:22px;font-weight:700;color:var(--accent)}
+.stat.proj li.actual span{font-weight:600;color:var(--ink)}
+section.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 20px 18px;margin:0 0 28px;box-shadow:var(--shadow)}
+.sub{color:var(--ink2);font-size:15px;margin-bottom:10px}
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--ink2);margin:6px 0 4px}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.sw{display:inline-block;width:22px;height:0;border-top:3px solid}
+.sw.dash{border-top-style:dashed}
+.note{font-size:13px;color:var(--ink3);margin-top:8px}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font-size:13px;line-height:1.4;padding:7px 10px;border-radius:8px;white-space:nowrap;transform:translate(-50%,calc(-100% - 12px));opacity:0;transition:opacity .08s;z-index:5;font-variant-numeric:tabular-nums}
+.tip b{font-weight:650}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px 22px;margin:14px 0 8px;padding:14px;border:1px solid var(--border);border-radius:10px;background:var(--bg)}
+.ctl label{display:flex;justify-content:space-between;font-size:14px;color:var(--ink2);gap:8px}
+.ctl label b{color:var(--ink);font-variant-numeric:tabular-nums}
+.ctl input[type=range]{width:100%;accent-color:var(--accent);margin:6px 0 2px}
+.ctl .hint{font-size:12px;color:var(--ink3)}
+.presets{display:flex;flex-wrap:wrap;gap:8px;grid-column:1/-1}
+.presets button{font:inherit;font-size:13px;padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:var(--card);color:var(--ink);cursor:pointer}
+.presets button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);font-weight:600}
+.readout{font-size:15px;margin:8px 0 2px;padding:10px 12px;border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:4px}
+.readout b{font-variant-numeric:tabular-nums}
+details{margin-top:10px}
+summary{cursor:pointer;color:var(--ink2);font-size:14px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums;margin-top:8px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--border);text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--ink2);font-weight:600}
+.verdict li{margin-bottom:6px}
+footer{font-size:13px;color:var(--ink3);border-top:1px solid var(--border);padding-top:16px;margin-top:8px}
+footer li{margin-bottom:4px}
+.themebtn{float:right;font:inherit;font-size:13px;border:1px solid var(--border);background:var(--card);color:var(--ink2);border-radius:999px;padding:4px 10px;cursor:pointer}
+@media (max-width:640px){ section.card{padding:16px 12px} .lede{font-size:16px} .chart{overflow-x:auto;-webkit-overflow-scrolling:touch} .chart svg{min-width:620px} .chart::after{content:'Swipe sideways to see the whole chart';display:block;font-size:12px;color:var(--ink3);margin-top:4px} }
+</style>
+</head>
+<body>
+<main>
+<button class="themebtn" id="themeBtn" type="button" aria-label="Toggle color theme">Theme</button>
+<h1>Is Sellwood Middle School headed below 400 students?</h1>
+<p class="lede">Portland Public Schools says Sellwood's enrollment will drop below 400, and the School Board is weighing closures against projections for the 2031-32 school year. This page compares that projection with Oregon's official enrollment counts and Portland State University's past forecasts.</p>
+<p class="meta">Data through fall 2025-26 · Updated October 2026</p>
+
+<div class="bottomline">
+  <h2>Bottom line</h2>
+  <ul>
+    <li>Sellwood has 566 students today, and enrollment has stayed between 550 and 613 since 2015-16.</li>
+    <li>Most evidence points to Sellwood falling below 400 by 2031-32, the year the School Board is using. PSU projects 350. Our own model projects about 356 to 408, depending on assumptions.</li>
+    <li>Staying above 400 would require Sellwood to keep enrolling feeder students at about its current record share (97%).</li>
+    <li>PSU's longer-range forecast shows a partial rebound to about 380 by 2035-36, still below 400. PSU bases those later years on its own kindergarten and population assumptions, not on children already enrolled.</li>
+    <li>The driver is smaller elementary classes: enrollment at the three feeder schools has fallen 31% since 2015-16.</li>
+    <li>Single-school forecasts are uncertain. PSU's forecasts for Sellwood's 2025-26 enrollment ranged from 10% too low to on target, and PSU publishes no error range for individual schools.</li>
+    <li>PSU also projects Hosford (374) and Brentwood/Lane (357), the likely receiving schools, below 400 in 2031-32.</li>
+  </ul>
+</div>
+
+<div class="stats" id="stats"></div>
+
+<section class="card" aria-labelledby="h-pipe">
+  <h2 id="h-pipe">Why PSU expects a decline: smaller classes are coming</h2>
+  <p class="sub">Students at Lewis, Duniway and Llewellyn elementaries in 2025-26, by the year they would start 6th grade.</p>
+  <div class="chart" id="chartPipe"></div>
+  <p class="note" id="pipeNote"></p>
+</section>
+
+<section class="card" aria-labelledby="h-main">
+  <div class="schoolbar">
+    <div class="seg" role="group" aria-label="Choose a school">
+      <button type="button" data-school="Sellwood" aria-pressed="true">Sellwood</button>
+      <button type="button" data-school="Hosford" aria-pressed="false">Hosford</button>
+      <button type="button" data-school="Lane" aria-pressed="false">Brentwood (Lane)</button>
+    </div>
+    <label class="toggle"><input type="checkbox" id="showOld" checked> Show earlier PSU forecasts</label>
+  </div>
+  <h2 id="h-main"></h2>
+  <p class="sub" id="mainSub"></p>
+  <div class="legend">
+    <span><i class="sw" style="border-color:var(--accent)"></i>Actual (Oregon Dept. of Education)</span>
+    <span id="youLegend"><i class="sw dash" style="border-color:var(--accent)"></i>Your projection</span>
+    <span><i class="sw" style="border-color:var(--hl)"></i><b style="color:var(--ink)">PSU July 2026 forecast (used by PPS), through 2035-36</b></span>
+    <span id="oldLegend" hidden><i class="sw dash" style="border-color:var(--muted)"></i>Earlier PSU forecasts, by year published</span>
+  </div>
+  <div class="chart" id="chartMain"></div>
+  <p class="note" id="schoolNote"></p>
+  <div class="controls" id="modelControls">
+    <div class="ctl">
+      <label for="cap"><span id="capLabel">Sellwood 6th grade as a share of feeder 5th grade</span> <b id="capV"></b></label>
+      <input id="cap" type="range" min="40" max="105" step="0.1">
+      <div class="hint" id="capHint"></div>
+      <button type="button" class="infobtn" data-pop="cap" aria-expanded="false">See year-by-year history</button>
+    </div>
+    <div class="ctl">
+      <label for="ret">Students who stay from 6th to 8th grade <b id="retV"></b></label>
+      <input id="ret" type="range" min="88" max="106" step="0.05">
+      <div class="hint" id="retHint"></div>
+      <button type="button" class="infobtn" data-pop="ret" aria-expanded="false">See year-by-year history</button>
+    </div>
+    <div class="pop" id="pop-cap" role="dialog" aria-label="Sellwood 6th grade as a share of feeder 5th grade, year by year" hidden></div>
+    <div class="pop" id="pop-ret" role="dialog" aria-label="Sellwood 6th-to-8th grade retention, year by year" hidden></div>
+    <div class="presets" role="group" aria-label="Scenario presets" id="presetBox"></div>
+    <p id="modelNote" style="grid-column:1/-1;margin:0;font-size:12px;color:var(--ink3)"></p>
+  </div>
+  <details id="modelDetails">
+    <summary>Show the numbers</summary>
+    <div class="tablewrap"><table id="modelTable"></table></div>
+  </details>
+</section>
+
+<div class="callout">
+  <h2>How much weight can a single-school forecast bear?</h2>
+  <p>PPS describes its projections as PSU’s “medium scenario.” That label refers to PSU’s district-wide forecast; for individual schools, PSU publishes only this one scenario, with no error range. For Sellwood’s 2025-26 enrollment, PSU’s forecasts ranged from 10% too low to on target, an average of about 5% too low. The July 2026 forecast of 350 for 2031-32 is PSU’s lowest yet, partly because each new forecast adds another year of smaller elementary classes. Even a 5% to 10% correction would leave Sellwood below 400 (about 368 to 389). A published range for each affected school would show the Board how likely different outcomes are.</p>
+</div>
+
+<footer>
+  <p><b>Sources</b></p>
+  <ul>
+    <li><a href="https://www.oregon.gov/ode/reports-and-data/students/Pages/Student-Enrollment-Reports.aspx">Oregon Department of Education, Fall Membership Reports, 2015-16 to 2025-26</a> (actual enrollment by school and grade).</li>
+    <li><a href="https://resources.finalsite.net/images/v1785171463/ppsnet/ejdr22voeddvux8qwlob/PPS_Forecast_2026_27.pdf">PSU Population Research Center, PPS Enrollment Forecasts 2026-27 to 2035-36</a>, Table 5.5.</li>
+    <li>Earlier PSU forecasts: <a href="https://resources.finalsite.net/images/v1759783181/ppsnet/xzghnbm55ogovbz4eisd/PPS_Forecast_2025.pdf">July 2025</a>, <a href="https://www.pps.net/cms/lib/OR01913224/Centricity/Domain/207/PRC_PPS_Forecast_Report_AY2023_withAppendix.pdf">July 2024</a>, <a href="https://pdxscholar.library.pdx.edu/cgi/viewcontent.cgi?article=1151&amp;context=enrollmentforecasts">June 2023</a>, <a href="https://pdxscholar.library.pdx.edu/cgi/viewcontent.cgi?article=1149&amp;context=enrollmentforecasts">June 2022</a>, <a href="https://pdxscholar.library.pdx.edu/cgi/viewcontent.cgi?article=1144&amp;context=enrollmentforecasts">June 2021</a> (Appendix C, per-school tables).</li>
+  </ul>
+  <p><b>Method.</b> Feeders are Lewis, Duniway and Llewellyn. Each year's 6th grade = the prior year's feeder 5th grade × the enrollment share you choose. Elementary classes advance at the feeders' average grade-to-grade ratios for 2022-23 to 2025-26. 7th and 8th grades carry forward at the retention rate you choose. The model assumes current boundaries and no new programs; it is a check on PSU's forecast, not a replacement for it.</p>
+  <p>Prepared by Sellwood-area parents who oppose the proposed closure. Sources are listed above so readers can check every figure. Not affiliated with Portland Public Schools or Portland State University.</p>
+</footer>
+</main>
+
+<script>
+(function(){
+"use strict";
+// ---------- Data ----------
+// ODE fall membership, grades K..8 per school, keyed by fall year.
+const ODE = {"2015":{"Sellwood":[0,0,0,0,0,0,190,209,162],"Duniway":[69,100,82,79,87,78,0,0,0],"Lewis":[66,63,61,72,64,57,0,0,0],"Llewellyn":[84,73,84,98,101,95,0,0,0]},"2016":{"Sellwood":[0,0,0,0,0,0,198,185,200],"Duniway":[93,72,103,87,75,89,0,0,0],"Lewis":[74,69,67,65,72,66,0,0,0],"Llewellyn":[74,92,72,78,100,101,0,0,0]},"2017":{"Sellwood":[0,0,0,0,0,0,207,197,185],"Duniway":[77,90,74,98,85,75,0,0,0],"Lewis":[62,72,67,59,63,66,0,0,0],"Llewellyn":[81,73,90,69,78,98,0,0,0]},"2018":{"Sellwood":[null,null,null,null,null,null,206,207,200],"Duniway":[77,79,92,69,102,85,null,null,null],"Lewis":[63,65,74,65,62,61,null,null,null],"Llewellyn":[78,89,74,95,72,77,null,null,null]},"2019":{"Sellwood":[0,0,0,0,0,0,182,199,206],"Duniway":[81,82,85,91,73,99,0,0,0],"Lewis":[67,68,69,75,66,65,0,0,0],"Llewellyn":[82,91,90,81,95,70,0,0,0]},"2020":{"Sellwood":[0,0,0,0,0,0,180,176,194],"Duniway":[68,79,82,79,86,73,0,0,0],"Lewis":[51,65,61,61,68,62,0,0,0],"Llewellyn":[58,76,81,77,72,97,0,0,0]},"2021":{"Sellwood":[0,0,0,0,0,0,201,180,173],"Duniway":[74,60,69,81,73,79,0,0,0],"Lewis":[59,48,48,60,57,65,0,0,0],"Llewellyn":[70,56,73,75,58,63,0,0,0]},"2022":{"Sellwood":[0,0,0,0,0,0,183,202,178],"Duniway":[49,83,62,67,83,78,0,0,0],"Lewis":[54,56,45,41,63,61,0,0,0],"Llewellyn":[67,73,63,79,74,57,0,0,0]},"2023":{"Sellwood":[0,0,0,0,0,0,177,189,201],"Duniway":[60,57,80,59,70,83,0,0,0],"Lewis":[35,55,55,48,40,64,0,0,0],"Llewellyn":[53,64,69,63,78,66,0,0,0]},"2024":{"Sellwood":[0,0,0,0,0,0,195,186,194],"Duniway":[51,61,58,83,60,74,0,0,0],"Lewis":[34,31,57,54,50,41,0,0,0],"Llewellyn":[45,48,65,74,63,78,0,0,0]},"2025":{"Sellwood":[0,0,0,0,0,0,188,194,184],"Duniway":[57,54,63,52,80,56,0,0,0],"Lewis":[35,44,27,53,54,49,0,0,0],"Llewellyn":[52,48,41,66,75,63,0,0,0]}};
+const G = ['K','1','2','3','4','5','6','7','8'];
+const FEEDERS = ['Duniway','Lewis','Llewellyn'];
+const YEARS = Object.keys(ODE).map(Number).sort((a,b)=>a-b);
+const LAST = YEARS[YEARS.length-1];
+const PSU2026 = {2025:564,2026:537,2027:523,2028:484,2029:439,2030:382,2031:350,2032:362,2033:364,2034:380,2035:380};
+// Actual fall enrollment, grades 6-8 (ODE Fall Membership Reports)
+const ACTUAL_HOSFORD = {2015:640,2016:631,2017:621,2018:588,2019:651,2020:675,2021:630,2022:566,2023:517,2024:537,2025:528};
+const ACTUAL_LANE = {2015:481,2016:442,2017:454,2018:433,2019:434,2020:411,2021:369,2022:334,2023:391,2024:417,2025:450};
+// PSU forecasts, grades 6-8 totals, by year published (PSU Table 5.5 / Appendix C). Forecast years only.
+// Hosford and Lane forecasts from 2021 and 2022 are omitted: they predate the fall 2023 Southeast program and boundary changes.
+const VINT_HOSFORD = {
+  2023:{label:'June 2023', d:{2023:483,2024:489,2025:487,2026:471,2027:450,2028:417,2029:391,2030:386,2031:392}},
+  2024:{label:'July 2024', d:{2024:512,2025:503,2026:477,2027:430,2028:395,2029:336,2030:329,2031:326}},
+  2025:{label:'July 2025', d:{2025:509,2026:484,2027:431,2028:404,2029:352,2030:336,2031:313}}
+};
+const VINT_LANE = {
+  2023:{label:'June 2023', d:{2023:390,2024:447,2025:476,2026:474,2027:444,2028:425,2029:386,2030:380,2031:373}},
+  2024:{label:'July 2024', d:{2024:425,2025:447,2026:423,2027:415,2028:395,2029:376,2030:354,2031:356}},
+  2025:{label:'July 2025', d:{2025:429,2026:425,2027:444,2028:433,2029:411,2030:386,2031:377}}
+};
+const PSU2026_HOSFORD = {2026:522,2027:482,2028:445,2029:390,2030:375,2031:374,2032:376,2033:371,2034:371,2035:370};
+const PSU2026_LANE = {2026:425,2027:417,2028:402,2029:393,2030:372,2031:357,2032:352,2033:352,2034:370,2035:372};
+// PSU forecasts for Sellwood MS (grades 6-8), by year published. Forecast years only.
+const PSUV = {
+  2021:{label:'June 2021', d:{2021:569,2022:573,2023:576,2024:562,2025:568,2026:552,2027:548,2028:527,2029:510,2030:490}},
+  2022:{label:'June 2022', d:{2022:550,2023:536,2024:521,2025:515,2026:499,2027:511,2028:518,2029:536,2030:506,2031:491}},
+  2023:{label:'June 2023', d:{2023:561,2024:540,2025:539,2026:518,2027:489,2028:457,2029:437,2030:430,2031:436}},
+  2024:{label:'July 2024', d:{2024:544,2025:509,2026:487,2027:474,2028:452,2029:441,2030:412,2031:418}},
+  2025:{label:'July 2025', d:{2025:564,2026:536,2027:523,2028:501,2029:468,2030:408,2031:375}}
+};
+const TARGET = 2031; // School Board's projection year (2031-32)
+
+const sy = y => `${y}-${String((y+1)%100).padStart(2,'0')}`;
+const sum = a => a.reduce((s,x)=>s+x,0);
+const mean = a => sum(a)/a.length;
+const fe = (y,gi) => sum(FEEDERS.map(s=>ODE[y][s][gi]));
+const sw = y => ODE[y].Sellwood;
+const swTotal = y => sw(y)[6]+sw(y)[7]+sw(y)[8];
+
+// Derived history
+const capture = {}; YEARS.slice(1).forEach(y => capture[y] = sw(y)[6]/fe(y-1,5));
+const ret67 = YEARS.slice(1).map(y => sw(y)[7]/sw(y-1)[6]);
+const ret78 = YEARS.slice(1).map(y => sw(y)[8]/sw(y-1)[7]);
+const egpr = [0,1,2,3,4].map(i => mean([LAST-2,LAST-1,LAST].map(y => fe(y,i+1)/fe(y-1,i))));
+const capAll = mean(Object.values(capture)), capLast3 = mean([LAST-2,LAST-1,LAST].map(y=>capture[y])), capLast = capture[LAST];
+
+function project(cap, ret, nYears, extra){
+  extra = extra || 0;
+  let coh = G.slice(0,6).map((g,i)=>fe(LAST,i));
+  let m = [sw(LAST)[6], sw(LAST)[7], sw(LAST)[8]];
+  const out = [];
+  for(let t=1;t<=nYears;t++){
+    const six = coh[5]*cap + extra;
+    m = [six, m[0]*ret, m[1]*ret];
+    const nc = [coh[0]]; for(let i=1;i<6;i++) nc[i] = coh[i-1]*egpr[i-1];
+    coh = nc;
+    out.push({year:LAST+t, g6:Math.round(m[0]), total:Math.round(m[0]+m[1]+m[2])});
+  }
+  return out;
+}
+
+// ---------- Helpers ----------
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent, text){
+  const e = document.createElementNS(NS, tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  if(text!=null) e.textContent = text;
+  if(parent) parent.appendChild(e);
+  return e;
+}
+function makeTip(container){
+  const t = document.createElement('div'); t.className='tip'; container.appendChild(t);
+  return {
+    show(html, x, y){ t.innerHTML = html; t.style.left = x+'px'; t.style.top = y+'px'; t.style.opacity = 1; },
+    hide(){ t.style.opacity = 0; }
+  };
+}
+function hit(svg, tip, cx, cy, r, html, container){
+  const c = el('circle',{cx,cy,r,fill:'transparent',tabindex:0,role:'img','aria-label':html.replace(/<[^>]+>/g,'')},svg);
+  const show = () => {
+    const sb = svg.getBoundingClientRect(), cb = container.getBoundingClientRect();
+    const scale = sb.width / svg.viewBox.baseVal.width;
+    tip.show(html, (sb.left-cb.left+container.scrollLeft) + cx*scale, (sb.top-cb.top) + cy*scale);
+  };
+  c.addEventListener('pointerenter', show); c.addEventListener('focus', show);
+  c.addEventListener('pointerleave', tip.hide); c.addEventListener('blur', tip.hide);
+  c.addEventListener('click', show);
+  return c;
+}
+const TXT = (cls) => ({ 'font-size':12, fill:`var(${cls||'--ink2'})` });
+
+// ---------- PSU projections vs. actual, 2025-26 ----------
+(function(){
+  const yr = 2025, a = swTotal(yr);
+  const avgMiss = Math.round(mean(Object.keys(PSUV).map(v=>(PSUV[v].d[yr]-a)/a*100)));
+  const rows = Object.keys(PSUV).map(Number).sort((x,y)=>x-y).filter(v=>PSUV[v].d[yr]!=null).map(v=>{
+    const f = PSUV[v].d[yr], pct = Math.round((f-a)/a*100);
+    return `<li><span>Projected from ${v}</span><b>${f}</b><em>${pct>0?'+':''}${pct}%</em></li>`;
+  }).join('');
+  document.getElementById('stats').innerHTML = `<div class="stat proj"><div class="k proj-title">How PSU's forecasts for Sellwood's ${sy(yr)} enrollment compared with actual</div><ul>${rows}<li class="actual"><span>Actual</span><b>${a}</b><em></em></li></ul><div class="s">Forecasts by the year PSU made them. Three were 5% to 10% too low; the 2021 and 2025 forecasts were within 1%. Average miss: ${avgMiss}%.</div></div>`;
+})();
+
+// ---------- Chart 2: pipeline ----------
+(function(){
+  const box = document.getElementById('chartPipe'); const tip = makeTip(box);
+  const names = ['Kindergarten','1st grade','2nd grade','3rd grade','4th grade','5th grade'];
+  const rows = [5,4,3,2,1,0].map(i=>({grade:names[i], size:fe(LAST,i), entry:LAST+(6-i)}));
+  const past = mean([2015,2016,2017,2018,2019].map(y=>fe(y,5)));
+  const min = Math.min(...rows.map(r=>r.size));
+  const W=760,H=300,L=40,R=10,T=24,B=50, vmax=260, band=(W-L-R)/rows.length, bw=Math.min(64,band*.6);
+  const y = v => T + (vmax-v)/vmax*(H-T-B);
+  const svg = el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':'Current feeder elementary class sizes by year they would enter 6th grade'},box);
+  [0,100,200].forEach(t=>{ el('line',{x1:L,x2:W-R,y1:y(t),y2:y(t),stroke:t?'var(--grid)':'var(--axis)'},svg); el('text',{x:L-8,y:y(t)+4,'text-anchor':'end',...TXT()},svg,t); });
+  el('line',{x1:L,x2:W-R,y1:y(past),y2:y(past),stroke:'var(--ref)','stroke-dasharray':'4 3'},svg);
+  el('text',{x:W-R,y:y(past)-6,'text-anchor':'end',...TXT()},svg,`Average feeder 5th grade, 2015-2019: ${Math.round(past)}`);
+  rows.forEach((r,i)=>{
+    const cx = L + i*band + band/2;
+    el('rect',{x:cx-bw/2,y:y(r.size),width:bw,height:y(0)-y(r.size),rx:3,fill:r.size===min?'var(--accent)':'var(--muted)'},svg);
+    el('text',{x:cx,y:y(r.size)-8,'text-anchor':'middle','font-weight':600,...TXT('--ink')},svg,r.size);
+    el('text',{x:cx,y:H-B+18,'text-anchor':'middle',...TXT('--ink')},svg,`6th in ${sy(r.entry)}`);
+    el('text',{x:cx,y:H-B+34,'text-anchor':'middle',...TXT('--ink3')},svg,`now ${r.grade}`);
+    const h = el('rect',{x:cx-band/2,y:T,width:band,height:H-T-B,fill:'transparent',tabindex:0},svg);
+    const show=()=>{const sb=svg.getBoundingClientRect(),cb=box.getBoundingClientRect(),sc=sb.width/W; tip.show(`<b>${r.grade} in ${sy(LAST)}</b><br>${r.size} students · would start 6th grade in ${sy(r.entry)}<br>${Math.round((r.size-past)/past*100)}% vs. 2015-2019 average`, sb.left-cb.left+cx*sc, sb.top-cb.top+y(r.size)*sc);};
+    h.addEventListener('pointerenter',show); h.addEventListener('focus',show); h.addEventListener('click',show);
+    h.addEventListener('pointerleave',tip.hide); h.addEventListener('blur',tip.hide);
+  });
+  document.getElementById('pipeNote').textContent = `Sellwood has held steady because it now draws almost all of these students: its 6th grade equaled ${Math.round(capture[2020]*100)}% of the prior year's feeder 5th grade in ${sy(2020)} and ${Math.round(capLast*100)}% in ${sy(LAST)}.`;
+})();
+// ---------- Generic cohort model for any middle school ----------
+// ODE fall membership, grades K..8, for Hosford, Brentwood (Lane) and their current feeder elementaries.
+const ODE_OTHER = {"2015":{"Abernethy":[91,82,101,80,77,82,0,0,0],"Buckman":[77,74,86,88,73,83,0,0,0],"Creston":[58,46,48,33,49,55,39,38,32],"Grout":[75,66,76,62,49,48,0,0,0],"Hosford":[0,0,0,0,0,0,253,200,187],"Kelly":[94,106,117,108,98,87,0,0,0],"Lane":[0,0,0,0,0,0,175,156,150],"Whitman":[44,36,45,56,46,44,0,0,0],"Woodmere":[57,39,56,51,54,55,0,0,0],"Woodstock":[87,91,84,86,80,68,0,0,0]},"2016":{"Abernethy":[85,95,86,99,76,78,0,0,0],"Buckman":[66,85,71,82,81,73,0,0,0],"Creston":[39,53,44,41,28,46,39,31,34],"Grout":[67,72,63,75,57,50,0,0,0],"Hosford":[0,0,0,0,0,0,202,228,201],"Kelly":[95,99,105,104,108,94,0,0,0],"Lane":[0,0,0,0,0,0,141,162,139],"Whitman":[35,47,36,44,53,43,0,0,0],"Woodmere":[52,55,45,47,51,51,0,0,0],"Woodstock":[96,88,91,88,86,78,0,0,0]},"2017":{"Abernethy":[84,87,92,79,93,81,0,0,0],"Buckman":[74,79,89,72,80,81,0,0,0],"Creston":[55,37,48,42,47,26,48,39,30],"Grout":[65,67,71,67,69,52,0,0,0],"Hosford":[0,0,0,0,0,0,196,193,232],"Kelly":[75,84,94,95,98,86,0,0,0],"Lane":[0,0,0,0,0,0,162,135,157],"Whitman":[50,36,43,38,48,52,0,0,0],"Woodmere":[53,57,49,43,41,43,0,0,0],"Woodstock":[89,101,89,88,92,93,0,0,0]},"2018":{"Abernethy":[85,82,84,94,83,92,0,0,0],"Buckman":[76,67,77,82,65,83,0,0,0],"Creston":[42,47,32,47,37,47,24,46,39],"Grout":[67,69,60,65,57,64,0,0,0],"Hosford":[0,0,0,0,0,0,217,186,185],"Kelly":[87,73,74,86,91,87,0,0,0],"Lane":[0,0,0,0,0,0,151,153,129],"Whitman":[35,47,36,42,38,40,0,0,0],"Woodmere":[54,55,56,50,44,42,0,0,0],"Woodstock":[98,92,95,84,89,90,0,0,0]},"2019":{"Abernethy":[79,87,80,83,95,83,0,0,0],"Buckman":[67,77,72,72,78,61,0,0,0],"Creston":[55,44,46,34,44,34,56,24,38],"Grout":[57,62,66,61,66,58,0,0,0],"Hosford":[0,0,0,0,0,0,245,214,192],"Kelly":[105,86,65,67,76,77,0,0,0],"Lane":[0,0,0,0,0,0,151,145,138],"Whitman":[41,29,45,35,37,33,0,0,0],"Woodmere":[42,46,49,47,48,41,0,0,0],"Woodstock":[100,100,89,91,80,83,0,0,0]},"2020":{"Abernethy":[45,80,86,71,78,90,0,0,0],"Buckman":[75,71,77,73,73,79,0,0,0],"Creston":[48,55,40,44,40,44,36,55,25],"Grout":[57,54,64,59,57,59,0,0,0],"Hosford":[0,0,0,0,0,0,219,245,211],"Kelly":[64,85,82,63,59,71,0,0,0],"Lane":[0,0,0,0,0,0,121,144,146],"Whitman":[28,27,30,37,30,33,0,0,0],"Woodmere":[40,43,41,45,49,51,0,0,0],"Woodstock":[87,97,93,88,87,76,0,0,0]},"2021":{"Abernethy":[44,53,61,74,70,72,0,0,0],"Buckman":[59,71,69,69,71,61,0,0,0],"Creston":[33,51,50,34,45,36,0,0,0],"Grout":[56,58,55,54,67,51,0,0,0],"Hosford":[0,0,0,0,0,0,183,199,248],"Kelly":[67,61,69,75,47,62,0,0,0],"Lane":[0,0,0,0,0,0,110,114,145],"Whitman":[20,25,24,27,31,25,0,0,0],"Woodmere":[37,36,49,39,42,50,0,0,0],"Woodstock":[79,77,85,87,75,76,0,0,0]},"2022":{"Abernethy":[42,45,57,64,74,71,0,0,0],"Buckman":[48,68,75,74,64,66,0,0,0],"Creston":[41,38,49,50,37,45,0,0,0],"Grout":[59,42,57,54,47,57,0,0,0],"Hosford":[0,0,0,0,0,0,189,177,200],"Kelly":[56,64,59,68,61,47,0,0,0],"Lane":[0,0,0,0,0,0,120,105,109],"Whitman":[18,24,25,25,27,34,0,0,0],"Woodmere":[33,41,41,40,42,37,0,0,0],"Woodstock":[70,92,83,84,87,75,0,0,0]},"2023":{"Abernethy":[39,46,47,59,64,75,0,0,0],"Buckman":[43,50,64,75,70,69,0,0,0],"Creston":[33,43,38,44,45,35,0,0,0],"Grout":[50,55,40,58,50,49,0,0,0],"Hosford":[0,0,0,0,0,0,183,175,159],"Kelly":[58,64,72,56,61,66,0,0,0],"Lane":[0,0,0,0,0,0,161,114,116],"Whitman":[37,27,27,29,29,31,0,0,0],"Woodmere":[39,37,49,42,40,41,0,0,0],"Woodstock":[64,68,86,72,80,81,0,0,0]},"2024":{"Abernethy":[38,39,43,46,57,62,0,0,0],"Buckman":[32,44,40,59,71,60,0,0,0],"Creston":[34,37,40,43,46,46,0,0,0],"Grout":[44,45,54,46,58,48,0,0,0],"Hosford":[0,0,0,0,0,0,178,179,180],"Kelly":[71,61,64,73,58,58,0,0,0],"Lane":[0,0,0,0,0,0,152,149,116],"Whitman":[38,41,30,27,29,33,0,0,0],"Woodmere":[43,40,39,43,41,35,0,0,0],"Woodstock":[48,66,61,77,64,77,0,0,0]},"2025":{"Abernethy":[43,44,37,42,47,56,0,0,0],"Buckman":[42,40,36,42,55,68,0,0,0],"Creston":[27,33,37,41,43,38,0,0,0],"Grout":[51,59,49,50,53,65,0,0,0],"Hosford":[0,0,0,0,0,0,166,184,178],"Kelly":[69,75,63,66,77,61,0,0,0],"Lane":[0,0,0,0,0,0,148,149,153],"Whitman":[32,33,39,28,32,29,0,0,0],"Woodmere":[31,42,37,42,36,38,0,0,0],"Woodstock":[69,51,64,53,68,61,0,0,0]}};
+function makeModel(data, ms, feeders, opt){
+  const yrs = Object.keys(data).map(Number).sort((a,b)=>a-b), last = yrs[yrs.length-1];
+  const f = (y,gi) => sum(feeders.map(s=>data[y][s][gi]));
+  const m = y => data[y][ms];
+  const cap = {}, r67 = {}, r78 = {};
+  yrs.slice(1).forEach(y=>{ cap[y]=m(y)[6]/f(y-1,5); r67[y]=m(y)[7]/m(y-1)[6]; r78[y]=m(y)[8]/m(y-1)[7]; });
+  const gpr = [0,1,2,3,4].map(i => mean([last-2,last-1,last].map(y => f(y,i+1)/f(y-1,i))));
+  function project(c, ret, n){
+    let coh = [0,1,2,3,4,5].map(i=>f(last,i)), mm = [m(last)[6], m(last)[7], m(last)[8]]; const out = [];
+    for(let t=1;t<=n;t++){ const six = coh[5]*c; mm = [six, mm[0]*ret, mm[1]*ret];
+      const nc=[coh[0]]; for(let i=1;i<6;i++) nc[i]=coh[i-1]*gpr[i-1]; coh=nc;
+      out.push({year:last+t, g6:Math.round(mm[0]), total:Math.round(mm[0]+mm[1]+mm[2])}); }
+    return out;
+  }
+  const r = n => Math.round(n*1000)/10;
+  let presets;
+  if(opt.presets) presets = opt.presets;
+  else {
+    const ys = yrs.filter(y=>y>=opt.since), cs = ys.map(y=>cap[y]), rs = ys.map(y=>(r67[y]+r78[y])/2);
+    presets = [
+      {label:`Low: lowest of ${sy(ys[0])} to ${sy(last)}`, cap:r(Math.min(...cs)), ret:r(Math.min(...rs))},
+      {label:`Medium: ${sy(ys[0])} to ${sy(last)} average`, cap:r(mean(cs)), ret:r(mean(rs))},
+      {label:`High: highest of ${sy(ys[0])} to ${sy(last)}`, cap:r(Math.max(...cs)), ret:r(Math.max(...rs))}];
+  }
+  return {ms, feeders, years:yrs, last, cap, r67, r78, project, presets, since:opt.since, note:opt.note||''};
+}
+const MODELS = {
+  Sellwood: makeModel(ODE, 'Sellwood', FEEDERS, {since:2016, presets:[
+    {label:'Low: 10-year average', cap:86.6, ret:99.55},{label:'Medium: last 3 years', cap:93.1, ret:99.55},{label:'High: last year', cap:97.4, ret:101.5}]}),
+  Hosford: makeModel(ODE_OTHER, 'Hosford', ['Abernethy','Buckman','Creston','Grout'], {since:2023,
+    note:'Presets use 2023-24 to 2025-26 only, because Hosford\'s programs and boundaries changed in fall 2023. Buckman is an arts focus-option school, so some of its students come from outside the Hosford area.'}),
+  Lane: makeModel(ODE_OTHER, 'Lane', ['Kelly','Whitman','Woodmere','Woodstock'], {since:2023,
+    note:'Presets use 2023-24 to 2025-26 only, because Lane\'s attendance area changed in fall 2023. Woodstock hosts a Mandarin immersion program whose students move on to a different middle school, which lowers this share. For Brentwood, this simple model runs well above PSU in every preset. PSU\'s model also accounts for immersion programs, new housing and district-wide adjustments, so treat the gap with caution.'})
+};
+let CURRENT = 'Sellwood';
+
+// ---------- Merged chart: history, forecasts and your projection ----------
+(function(){
+  const box = document.getElementById('chartMain'); const tip = makeTip(box);
+  const capEl = document.getElementById('cap'), retEl = document.getElementById('ret'), oldEl = document.getElementById('showOld');
+  const TARGET = 2031;
+  const W=760,H=400,L=46,R=96,T=18,B=36, x0=2015,x1=2035, v0=280; let v1=650;
+  const x = yy => L + (yy-x0)/(x1-x0)*(W-L-R), y = v => T + (v1-v)/(v1-v0)*(H-T-B);
+  let presets = [];
+  const names = {Sellwood:'Sellwood', Hosford:'Hosford', Lane:'Brentwood (Lane)'};
+  function setupModel(key){
+    const M = MODELS[key]; CURRENT = key;
+    const pct = v => Math.round(v*100)+'%';
+    document.getElementById('capLabel').textContent = `${names[key]} 6th grade as a share of feeder 5th grade`;
+    document.getElementById('capHint').textContent = `Feeders: ${M.feeders.join(', ')}. Net of everyone: feeder students who go elsewhere, plus arrivals from private school, homeschool, transfers and move-ins. Last 3 years: ${M.years.slice(-3).map(y=>pct(M.cap[y])).join(', ')}.`;
+    document.getElementById('retHint').textContent = `Year-to-year retention, applied to 6th→7th and 7th→8th. Last 3 years (average of both): ${M.years.slice(-3).map(y=>pct((M.r67[y]+M.r78[y])/2)).join(', ')}.`;
+    document.getElementById('modelNote').textContent = M.note;
+    const box = document.getElementById('presetBox');
+    box.innerHTML = M.presets.map(p=>`<button type="button" data-cap="${p.cap}" data-ret="${p.ret}">${p.label}</button>`).join('');
+    presets = [...box.querySelectorAll('button')];
+    presets.forEach(b=>b.addEventListener('click',()=>{capEl.value=b.dataset.cap; retEl.value=b.dataset.ret; draw();}));
+    capEl.value = M.presets[1].cap; retEl.value = M.presets[1].ret;
+  }
+  const path = pts => pts.map((p,i)=>`${i?'L':'M'}${x(p[0])},${y(p[1])}`).join(' ');
+  const SCH = {
+    Sellwood:{name:'Sellwood', actual:Object.fromEntries(YEARS.map(yy=>[yy,swTotal(yy)])), vint:PSUV, psu:Object.fromEntries(Object.entries(PSU2026).filter(([k])=>+k>LAST)), model:true,
+      title:'Sellwood has held steady so far; PSU expects a decline that steepens after 2027-28',
+      sub:'Fall enrollment, grades 6-8. Use the sliders below the chart to build your own projection and compare it with the forecast PPS is using. Hover or tap a point for its value.',
+      context:''},
+    Hosford:{name:'Hosford', actual:ACTUAL_HOSFORD, vint:VINT_HOSFORD, psu:PSU2026_HOSFORD, model:false,
+      title:'Hosford has declined since 2020, partly because a program moved out; PSU expects a steeper decline after 2026-27',
+      sub:'Fall enrollment, grades 6-8. Hover or tap a point for its value.',
+      context:"Hosford's Mandarin immersion program moved to Harrison Park in fall 2023 as part of PPS's Southeast enrollment and program changes, which accounts for part of the drop since 2020. PSU's 2021 and 2022 forecasts were made before that change and are not shown."},
+    Lane:{name:'Brentwood (Lane)', actual:ACTUAL_LANE, vint:VINT_LANE, psu:PSU2026_LANE, model:false,
+      title:'Brentwood (Lane) has grown since 2022 after a boundary change; PSU expects a gradual decline',
+      sub:'Fall enrollment, grades 6-8. The school was called Lane Middle School in the data sources. Hover or tap a point for its value.',
+      context:"Lane's attendance area changed in fall 2023 under PPS's Southeast enrollment and program changes, which accounts for at least part of the increase since 2022. PSU's 2021 and 2022 forecasts were made before that change and are not shown."}
+  };
+  let cur = 'Sellwood';
+  const segBtns = [...document.querySelectorAll('.seg button')];
+  segBtns.forEach(b=>b.addEventListener('click',()=>{ cur=b.dataset.school; segBtns.forEach(o=>o.setAttribute('aria-pressed',String(o===b))); setupModel(cur); draw(); }));
+  function draw(){
+    const S = SCH[cur];
+    document.getElementById('h-main').textContent = S.title;
+    document.getElementById('mainSub').textContent = S.sub;
+    document.getElementById('youLegend').hidden = !S.model;
+    document.getElementById('modelControls').hidden = !S.model;
+    document.getElementById('modelDetails').hidden = !S.model;
+    const a25 = S.actual[LAST];
+    const fc = Object.keys(S.vint).map(Number).sort((p,q)=>p-q).filter(v=>S.vint[v].d[LAST]!=null).map(v=>{ const f=S.vint[v].d[LAST]; return {v,f,pct:Math.round((f-a25)/a25*100)}; });
+    const lo = Math.min(...fc.map(f=>f.pct)), hi = Math.max(...fc.map(f=>f.pct));
+    const fmt = n => n<0 ? `${-n}% too low` : n>0 ? `${n}% too high` : 'on target';
+    document.getElementById('schoolNote').innerHTML = (S.context ? S.context+' ' : '') +
+      `For ${sy(LAST)}, PSU's forecasts were ${fc.map(f=>`${f.f} (${f.v})`).join(', ')}, against actual enrollment of ${a25}: ${hi<0 ? `between ${-hi}% and ${-lo}% too low` : lo>0 ? `between ${lo}% and ${hi}% too high` : `from ${fmt(hi)} to ${fmt(lo)}`}.` +
+      (S.model ? '' : `<span class="nomodel"><b>Why there is no projection tool for ${S.name}.</b> The simple model on this page rolls each feeder school's classes forward using recent history. This school's boundaries and programs changed in fall 2023, so there are only three comparable years, and its feeder schools include students who don't follow the usual path (focus-option and immersion programs). With so little stable history, the model can't produce a projection we'd stand behind. PSU's forecast uses PPS's own boundary and program data, so it is the better guide here. Sellwood's boundaries have been stable for more than a decade, which is why its projection tool is available.</span>`);
+    const allVals = Object.values(S.actual).concat(Object.values(S.psu));
+    v1 = Math.max(650, Math.ceil((Math.max(...allVals)+30)/50)*50);
+    const cap = +capEl.value/100, ret = +retEl.value/100, ext = 0, showOld = oldEl.checked;
+    document.getElementById('capV').textContent = (+capEl.value).toFixed(1)+'%';
+    document.getElementById('retV').textContent = (+retEl.value).toFixed(1)+'%';
+    document.getElementById('oldLegend').hidden = !showOld;
+    presets.forEach(b=>b.setAttribute('aria-pressed', String(+b.dataset.cap===+capEl.value && +b.dataset.ret===+retEl.value && ext===0)));
+    const proj = MODELS[cur].project(cap, ret, TARGET-LAST);
+    box.querySelectorAll('svg').forEach(s=>s.remove());
+    const svg = el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':`${S.name} enrollment history and PSU forecasts through 2031-32`},box);
+    // target-year band, grid, references
+    el('rect',{x:x(TARGET)-14,y:T,width:28,height:H-T-B,fill:'var(--band)'},svg);
+    el('text',{x:x(TARGET)-20,y:T+12,'text-anchor':'end',...TXT()},svg,'School Board target year →');
+    el('line',{x1:x(TARGET)+14,x2:x(TARGET)+14,y1:T+20,y2:H-B,stroke:'var(--grid)'},svg);
+    el('text',{x:x(TARGET)+20,y:T+32,...TXT('--ink3')},svg,'Beyond 2031-32:');
+    el('text',{x:x(TARGET)+20,y:T+46,...TXT('--ink3')},svg,'PSU assumptions only');
+    el('line',{x1:x(LAST)+0.5,x2:x(LAST)+0.5,y1:T+20,y2:H-B,stroke:'var(--grid)'},svg);
+    el('text',{x:x(LAST)+6,y:H-B-8,...TXT('--ink3')},svg,'Projections →');
+    [300,400,500,600,700].filter(t=>t<=v1).forEach(t=>{ el('line',{x1:L,x2:x(x1)+6,y1:y(t),y2:y(t),stroke:'var(--grid)'},svg); el('text',{x:L-8,y:y(t)+4,'text-anchor':'end',...TXT()},svg,t); });
+    el('line',{x1:L,x2:x(x1)+6,y1:y(500),y2:y(500),stroke:'var(--ref)','stroke-dasharray':'2 3'},svg);
+    el('text',{x:L+4,y:y(500)-6,...TXT()},svg,'PPS middle school threshold: 500');
+    el('line',{x1:L,x2:x(x1)+6,y1:y(400),y2:y(400),stroke:'var(--ref)','stroke-width':1.5,'stroke-dasharray':'5 3'},svg);
+    el('text',{x:L+4,y:y(400)+16,...TXT()},svg,'400 students');
+    [2015,2017,2019,2021,2023,2025,2027,2029,2031,2033,2035].forEach(t=>el('text',{x:x(t),y:H-10,'text-anchor':'middle',...TXT()},svg,sy(t)));
+    const ends = []; const hits = [];
+    // earlier forecasts (optional)
+    if(showOld){
+      Object.keys(S.vint).map(Number).sort((a,b)=>a-b).forEach((v,i,arr)=>{
+        const d = S.vint[v].d, ys = Object.keys(d).map(Number).filter(yy=>yy<=TARGET), op = 0.45+0.5*i/Math.max(1,arr.length-1);
+        el('path',{d:path(ys.map(yy=>[yy,d[yy]])),fill:'none',stroke:'var(--muted)','stroke-opacity':op,'stroke-width':1.8,'stroke-dasharray':'5 4'},svg);
+        ys.forEach(yy=>{ el('circle',{cx:x(yy),cy:y(d[yy]),r:2.8,fill:'var(--muted)','fill-opacity':op},svg); hits.push([yy,d[yy],`<b>PSU forecast, ${S.vint[v].label}</b><br>${sy(yy)}: ${d[yy]}${S.actual[yy]?`<br>Actual: ${S.actual[yy]} (${Math.round((d[yy]-S.actual[yy])/S.actual[yy]*100)}%)`:''}`]); });
+      });
+    }
+    // actual
+    const act = Object.keys(S.actual).map(Number).sort((p,q)=>p-q).map(yy=>[yy,S.actual[yy]]);
+    el('path',{d:path(act),fill:'none',stroke:'var(--accent)','stroke-width':2.5},svg);
+    act.forEach(p=>{ el('circle',{cx:x(p[0]),cy:y(p[1]),r:4,fill:'var(--accent)',stroke:'var(--card)','stroke-width':1.5},svg); hits.push([p[0],p[1],`<b>Actual enrollment</b><br>${sy(p[0])}: ${p[1]}`]); });
+    el('text',{x:x(LAST),y:y(a25)-12,'text-anchor':'middle','font-weight':600,...TXT('--ink')},svg,`Actual: ${a25}`);
+    // PSU 2026
+    const psu = [[LAST,a25]].concat(Object.keys(S.psu).map(Number).sort((p,q)=>p-q).map(yy=>[yy,S.psu[yy]]));
+    el('path',{d:path(psu),fill:'none',stroke:'var(--hl)','stroke-width':2.5},svg);
+    psu.slice(1).forEach(p=>{ el('circle',{cx:x(p[0]),cy:y(p[1]),r:4,fill:'var(--hl)',stroke:'var(--card)','stroke-width':1.5},svg); hits.push([p[0],p[1],`<b>PSU July 2026 forecast</b><br>${sy(p[0])}: ${p[1]}`]); });
+    const pEnd = psu[psu.length-1];
+    el('text',{x:x(pEnd[0])+8,y:y(pEnd[1])+4,'font-size':12,fill:'var(--hl)','font-weight':700},svg,`PSU: ${pEnd[1]}`);
+    el('text',{x:x(TARGET),y:y(S.psu[TARGET])+20,'text-anchor':'middle','font-size':12,fill:'var(--hl)','font-weight':700},svg,S.psu[TARGET]);
+    // your projection (Sellwood only)
+    if(S.model){
+    const mine = [[LAST,a25]].concat(proj.map(p=>[p.year,p.total]));
+    el('path',{d:path(mine),fill:'none',stroke:'var(--accent)','stroke-width':2.5,'stroke-dasharray':'6 4'},svg);
+    proj.forEach(p=>{ el('circle',{cx:x(p.year),cy:y(p.total),r:4.5,fill:'var(--card)',stroke:'var(--accent)','stroke-width':2},svg); hits.push([p.year,p.total,`<b>Your projection, ${sy(p.year)}</b><br>${p.total} students (incoming 6th grade: ${p.g6})<br>PSU July 2026: ${S.psu[p.year]}`]); });
+    const yEnd = proj[proj.length-1].total;
+    el('text',{x:x(TARGET)+10,y:y(yEnd)+(yEnd>=S.psu[TARGET]?-4:16),'font-size':12,fill:'var(--accent)','font-weight':700},svg,`You: ${yEnd}`);
+    }
+    // end labels with simple collision avoidance
+    // hover targets last so they sit on top
+    hits.forEach(h=>hit(svg,tip,x(h[0]),y(h[1]),8,h[2],box));
+    // readout + table
+    document.getElementById('modelTable').innerHTML = `<thead><tr><th>School year</th><th>Your projection</th><th>Incoming 6th grade</th><th>PSU July 2026</th><th>Difference</th></tr></thead><tbody>` +
+      proj.map(p=>`<tr><td>${sy(p.year)}</td><td>${p.total}</td><td>${p.g6}</td><td>${S.psu[p.year]}</td><td>${p.total-S.psu[p.year]>0?'+':''}${p.total-S.psu[p.year]}</td></tr>`).join('') + `</tbody>`;
+  }
+  oldEl.checked = true; setupModel('Sellwood');
+  [capEl,retEl,oldEl].forEach(e=>e.addEventListener('input', draw)); oldEl.addEventListener('change', draw);
+  draw();
+})();
+
+
+// ---------- Year-by-year history popovers ----------
+(function(){
+  const nm = {Sellwood:'Sellwood', Hosford:'Hosford', Lane:'Brentwood (Lane)'};
+  function getDefs(){
+    const M = MODELS[CURRENT], hy = M.years.slice(1);
+    return { hy, since:M.since, defs:{
+      cap: {title:`${nm[CURRENT]} 6th grade as a share of feeder 5th grade`, sub:`Each year's 6th grade ÷ the prior year's 5th grade at ${M.feeders.join(', ')}.`,
+            series:[{name:'Share', vals:hy.map(y=>[y,M.cap[y]*100]), col:'var(--accent)'}]},
+      ret: {title:'Students who stay from 6th to 8th grade', sub:`Year-to-year retention at ${nm[CURRENT]}: this year's 7th (8th) grade ÷ last year's 6th (7th) grade.`,
+            series:[{name:'6th→7th', vals:hy.map(y=>[y,M.r67[y]*100]), col:'var(--accent)'},{name:'7th→8th', vals:hy.map(y=>[y,M.r78[y]*100]), col:'var(--hl)'}]} } };
+  }
+  const defs = {cap:1, ret:1};
+  function render(key){
+    const G0 = getDefs(), hy = G0.hy, d = G0.defs[key], box = document.getElementById('pop-'+key);
+    box.innerHTML = `<button type="button" class="close" aria-label="Close">×</button><h3>${d.title}</h3><p class="ps">${d.sub}</p>`;
+    const all = d.series.flatMap(s=>s.vals.map(v=>v[1]));
+    const lo = Math.floor(Math.min(...all)/5)*5, hi = Math.ceil(Math.max(...all)/5)*5;
+    const W=720,H=200,L=40,R=12,T=14,B=26;
+    const x = yy => L + (yy-hy[0])/(hy[hy.length-1]-hy[0])*(W-L-R), y = v => T + (hi-v)/(hi-lo)*(H-T-B);
+    const svg = el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':d.title},box);
+    const step = (hi-lo)>30?10:5;
+    for(let g=lo; g<=hi; g+=step){ el('line',{x1:L,x2:W-R,y1:y(g),y2:y(g),stroke:'var(--grid)'},svg); el('text',{x:L-6,y:y(g)+4,'text-anchor':'end','font-size':10,fill:'var(--ink3)'},svg,g+'%'); }
+    if(lo<100 && hi>=100) el('line',{x1:L,x2:W-R,y1:y(100),y2:y(100),stroke:'var(--ref)','stroke-dasharray':'3 3'},svg);
+    [hy[0], hy[Math.floor(hy.length/2)], hy[hy.length-1]].forEach((yy,i)=>el('text',{x:x(yy),y:H-8,'text-anchor':['start','middle','end'][i],'font-size':10,fill:'var(--ink3)'},svg,sy(yy)));
+    d.series.forEach(s=>{
+      el('path',{d:s.vals.map((v,i)=>`${i?'L':'M'}${x(v[0])},${y(v[1])}`).join(' '),fill:'none',stroke:s.col,'stroke-width':2},svg);
+      s.vals.forEach(v=>{ const c = el('circle',{cx:x(v[0]),cy:y(v[1]),r:3.5,fill:s.col},svg); el('title',{},c,`${s.name}, ${sy(v[0])}: ${v[1].toFixed(1)}%`); });
+      const sv = s.vals.filter(v=>v[0]>=G0.since), avg = mean(sv.map(v=>v[1]));
+      el('line',{x1:x(sv[0][0]),x2:W-R,y1:y(avg),y2:y(avg),stroke:s.col,'stroke-opacity':.45,'stroke-dasharray':'4 3'},svg);
+    });
+    if(G0.since>hy[0]){ el('line',{x1:x(G0.since)-0,x2:x(G0.since),y1:T,y2:H-B,stroke:'var(--ref)','stroke-dasharray':'3 3'},svg); el('text',{x:x(G0.since)-4,y:T+10,'text-anchor':'end','font-size':10,fill:'var(--ink3)'},svg,'Boundary and program changes, fall 2023 →'); }
+    const leg = d.series.map(s=>{ const vs=s.vals.map(v=>v[1]); return `<span style="color:${s.col};font-weight:600">${d.series.length>1?s.name+': ':''}</span>${vs[0].toFixed(0)}% in ${sy(hy[0])} → ${vs[vs.length-1].toFixed(0)}% in ${sy(hy[hy.length-1])} · avg ${mean(s.vals.filter(v=>v[0]>=G0.since).map(v=>v[1])).toFixed(1)}%${G0.since>hy[0]?` since ${sy(G0.since)}`:''} (dashed)`; }).join('<br>');
+    const p = document.createElement('p'); p.className='ps'; p.style.marginTop='4px'; p.innerHTML = leg; box.appendChild(p);
+    box.querySelector('.close').addEventListener('click',()=>close(key));
+  }
+  function close(key){ document.getElementById('pop-'+key).hidden = true; document.querySelector(`.infobtn[data-pop="${key}"]`).setAttribute('aria-expanded','false'); }
+  document.querySelectorAll('.infobtn').forEach(b=>b.addEventListener('click',e=>{
+    e.stopPropagation(); const key=b.dataset.pop, box=document.getElementById('pop-'+key), open=box.hidden;
+    Object.keys(defs).forEach(close);
+    if(open){ render(key); box.hidden=false; b.setAttribute('aria-expanded','true'); }
+  }));
+  document.addEventListener('click',e=>{ if(!e.target.closest('.pop')) Object.keys(defs).forEach(close); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') Object.keys(defs).forEach(close); });
+})();
+
+// ---------- Theme toggle ----------
+(function(){
+  const btn = document.getElementById('themeBtn'), root = document.documentElement;
+  let saved = null; try{ saved = localStorage.getItem('theme'); }catch(e){}
+  if(saved) root.setAttribute('data-theme', saved);
+  btn.addEventListener('click', ()=>{
+    const dark = root.getAttribute('data-theme') ? root.getAttribute('data-theme')==='dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    const next = dark ? 'light' : 'dark'; root.setAttribute('data-theme', next);
+    try{ localStorage.setItem('theme', next); }catch(e){}
+  });
+})();
+})();
+</script>
+</body>
+</html>
